@@ -1,6 +1,6 @@
 # Orçamento pessoal 💻
 ## Description 📚
- Uma aplicação criada durante um curso, se trata de um site que utiliza o "local storage" do navegador para armazenamento de despesas do usuario e também oferece opção de consultar as depesas salvas.
+ Uma aplicação criada durante um curso, se trata de um site que utiliza o "local storage" do navegador para armazenamento de despesas do usuário e também oferece opção de consultar as despesas salvas.
 ## Installation 💡 
  1. Download the project
 2. Open the archive index.html 
