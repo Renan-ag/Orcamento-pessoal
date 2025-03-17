@@ -25,20 +25,20 @@
     integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
     crossorigin="anonymous"></script>
   <script defer src="https://use.fontawesome.com/releases/v5.0.8/js/all.js"></script>
-  <script src="./js/app.js"></script>
+  <script type="module" src="./js/app.js"></script>
   <script defer src="./js/components.js"></script>
 
-  <link rel="icon" type="image/png" href="./images/logo.png">
-  <title>Orçamento pessoal 🐷</title>
+  <link rel="icon" href="https://cdn.jsdelivr.net/gh/twitter/twemoji/assets/svg/1f437.svg" type="image/svg+xml">
+  <title>Orçamento pessoal</title>
 </head>
 
-<body class="bg-dark" onload="carregaListaDespesas()">
-  <navigation-bar></navigation-bar>
+<body class="bg-dark">
+  <navigation-bar path="consulta"></navigation-bar>
 
   <div class="container">
-    <expense-form title="Registro de nova despesa" formAction="update"></expense-form>
+    <expense-form title="Consulta despesas" formAction="search"></expense-form>
 
-    <table class="table table-dark table-striped p-2">
+    <table class="table table-dark table-striped p-2 mt-5">
       <thead class="thead-dark">
         <tr>
           <th>Data</th>
@@ -49,11 +49,11 @@
         </tr>
       </thead>
 
-      <tbody id="listaDespesas"></tbody>
+      <tbody id="listExpenses"></tbody>
     </table>
 
-    <div class="text-center mt-2">
-      <h1 class="h3 text-white" id="valor_total"></h1>
+    <div class="text-end mt-3">
+      <h1 class="h3 text-white" id="total-expenses"></h1>
     </div>
   </div>
 </body>

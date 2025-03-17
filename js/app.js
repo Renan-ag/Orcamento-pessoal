@@ -1,206 +1,113 @@
-class Despesa {
-  constructor(ano, mes, dia, tipo, descricao, valor) {
-    this.ano = ano
-    this.mes = mes
-    this.dia = dia
-    this.tipo = tipo
-    this.descricao = descricao
-    this.valor = valor
-  }
+import { Expense, DB } from './classes.js';
 
-  validarDados() {
-    for (let i in this) {
-      if (this[i] == undefined || this[i] == null || this[i] == '') {
-        return false
-      }
-    }
-    return true
-  }
+let db = new DB();
+
+function clearInputs() {
+  document.getElementById('year').selectedIndex = 0;
+  document.getElementById('month').selectedIndex = 0;
+  document.getElementById('day').value = '';
+  document.getElementById('type').selectedIndex = 0;
+  document.getElementById('description').value = '';
+  document.getElementById('value').value = '';
 }
 
-class Bd {
-  constructor() {
-    let id = localStorage.getItem('id')
-
-    if (id === null) {
-      localStorage.setItem('id', 0)
-    }
-  }
-
-  getProximoId() {
-    let proximoId = localStorage.getItem('id')
-    return parseInt(proximoId) + 1
-  }
-
-  gravar(d) {
-    let id = this.getProximoId()
-    localStorage.setItem(id, JSON.stringify(d))
-    localStorage.setItem('id', id)
-  }
-
-  recuperarTodosRegistros() {
-    let despesas = Array()
-
-    let id = localStorage.getItem('id')
-
-    for (let i = 1; i <= id; i++) {
-      let despesa = JSON.parse(localStorage.getItem(i))
-      if (despesa === null) {
-        continue
-      }
-      despesa.id = i
-      despesas.push(despesa)
-    }
-
-    return despesas
-  }
-  pesquisar(despesa) {
-    let despesaFiltradas = Array()
-    despesaFiltradas = this.recuperarTodosRegistros()
-
-    if (despesa.ano != '') {
-      despesaFiltradas = despesaFiltradas.filter(d => d.ano == despesa.ano)
-    }
-
-    if (despesa.mes != '') {
-      despesaFiltradas = despesaFiltradas.filter(d => d.mes == despesa.mes)
-    }
-
-    if (despesa.dia != '') {
-      despesaFiltradas = despesaFiltradas.filter(d => d.dia == despesa.dia)
-    }
-
-    if (despesa.tipo != '') {
-      despesaFiltradas = despesaFiltradas.filter(d => d.tipo == despesa.tipo)
-    }
-
-    if (despesa.descricao != '') {
-      despesaFiltradas = despesaFiltradas.filter(d => d.descricao == despesa.descricao)
-    }
-
-    if (despesa.valor != '') {
-      despesaFiltradas = despesaFiltradas.filter(d => d.valor == despesa.valor)
-    }
-    return despesaFiltradas
-  }
-
-  remover(id) {
-    localStorage.removeItem(id)
-  }
+function showModal(title, content, headerClass) {
+  document.getElementById('modal_titulo').innerHTML = title;
+  document.getElementById('modal_titulo_div').className = `modal-header ${headerClass}`;
+  document.getElementById('modal_conteudo').innerHTML = content;
+  $('#modalExpenseAlert').modal('show');
 }
 
-let bd = new Bd()
+function listExpenses(expenses = undefined) {
+  const expensesToDisplay = expenses ? expenses : db.getAllExpenses();
+  const listExpensesElement = document.getElementById('listExpenses');
+  let totalValue = 0;
 
-function cadastrarDespesa(e) {
+  listExpensesElement.innerHTML = '';
+
+  const expenseTypes = {
+    '1': 'Alimentação',
+    '2': 'Educação',
+    '3': 'Lazer',
+    '4': 'Saúde',
+    '5': 'Transporte'
+  };
+
+  const formatCurrency = (value) => `${parseFloat(value).toLocaleString('pt-br', { style: 'currency', currency: 'BRL' })}`;
+
+  const createDeleteButton = (expense) => {
+    const button = document.createElement('button');
+    button.className = 'btn btn-danger';
+    button.innerHTML = '<i class="fas fa-trash"></i>';
+    button.onclick = () => {
+      db.remove(expense.id);
+      listExpenses();
+    };
+    return button;
+  };
+
+  expensesToDisplay.forEach(expense => {
+    const row = listExpensesElement.insertRow();
+
+    row.insertCell(0).textContent = `${String(expense.day).padStart(2, '0')} / ${String(expense.month).padStart(2, '0')} / ${expense.year}`;
+    row.insertCell(1).textContent = expenseTypes[expense.type] || 'Outro';
+    row.insertCell(2).textContent = expense.description;
+    row.insertCell(3).textContent = formatCurrency(expense.value);
+
+    row.insertCell(4).append(createDeleteButton(expense));
+    totalValue += parseFloat(expense.value);
+  });
+
+
+  updateTotal(totalValue);
+}
+
+function registerExpense(e) {
   e.preventDefault();
 
-  let ano = document.getElementById('ano')
-  let mes = document.getElementById('mes')
-  let dia = document.getElementById('dia')
-  let tipo = document.getElementById('tipo')
-  let descricao = document.getElementById('descricao')
-  let valor = document.getElementById('valor')
+  const fields = ['year', 'month', 'day', 'type', 'description', 'value'];
+  const values = fields.reduce((acc, field) => {
+    acc[field] = document.getElementById(field).value.trim();
+    return acc;
+  }, {});
+  console.log(values)
 
-  let despesa = new Despesa(
-    ano.value,
-    mes.value,
-    dia.value,
-    tipo.value,
-    descricao.value,
-    valor.value
-  )
+  const expense = new Expense(...fields.map(field => values[field]));
 
-  if (despesa.validarDados()) {
-    bd.gravar(despesa)
-
-    document.getElementById('modal_titulo').innerHTML = 'Registro realizado com sucesso'
-    document.getElementById('modal_titulo_div').className = 'modal-header text-success'
-    document.getElementById('modal_conteudo').innerHTML = 'Despesa foi cadastrada com sucesso!'
-
-    $('#modalRegistraDespesa').modal('show')
-    limpaCampos()
+  if (expense.validateData()) {
+    db.save(expense);
+    showModal('Registro realizado com sucesso', 'Despesa foi cadastrada com sucesso!', 'text-success');
+    clearInputs();
   } else {
-    document.getElementById('modal_titulo').innerHTML = 'Erro ao realizar registro'
-    document.getElementById('modal_titulo_div').className = 'modal-header text-danger'
-    document.getElementById('modal_conteudo').innerHTML = 'A campos obrigatorios em branco, favor preenche-los.'
-    $('#modalRegistraDespesa').modal('show')
+    showModal('Erro ao realizar registro', 'Há campos obrigatórios em branco, favor preenchê-los.', 'text-danger');
   }
 }
 
-function limpaCampos() {
-  document.getElementById('ano').selectedIndex = 0
-  document.getElementById('mes').selectedIndex = 0
-  document.getElementById('dia').value = ''
-  document.getElementById('tipo').selectedIndex = 0
-  document.getElementById('descricao').value = ''
-  document.getElementById('valor').value = ''
+function searchInExpenses(e) {
+  e.preventDefault();
+  const fields = ['year', 'month', 'day', 'type', 'description', 'value'];
+  const values = fields.reduce((acc, field) => {
+    acc[field] = document.getElementById(field).value;
+    return acc;
+  }, {});
+
+  const expenses = new Expense(...fields.map(field => values[field]));
+  listExpenses(db.search(expenses));
 }
 
-function carregaListaDespesas(Despesas = Array()) {
-  let despesas = Despesas
-  let valorTotal = 0
-  if (Despesas.length == 0) {
-    despesas = bd.recuperarTodosRegistros()
-  }
-  let listaDespesas = document.getElementById('listaDespesas')
-  listaDespesas.innerHTML = ''
-
-  despesas.forEach(function (d) {
-    let linha = listaDespesas.insertRow()
-    linha.insertCell(0).innerHTML = `${d.dia}/${d.mes}/${d.ano}`
-    switch (d.tipo) {
-      case '1': d.tipo = 'Alimentação'
-        break
-      case '2': d.tipo = 'Educação'
-        break
-      case '3': d.tipo = 'Lazer'
-        break
-      case '4': d.tipo = 'Saúde'
-        break
-      case '5': d.tipo = 'Transporte'
-        break
-    }
-    linha.insertCell(1).innerHTML = d.tipo
-    linha.insertCell(2).innerHTML = d.descricao
-    linha.insertCell(3).innerHTML = d.valor
-
-    let btn = document.createElement("button")
-    btn.className = 'btn btn-danger'
-    btn.innerHTML = '<i class="fas fa-times"></i>'
-    btn.id = `id_despesa_${d.id}`
-    btn.onclick = function () {
-      let id = this.id.replace('id_despesa_', '')
-      bd.remover(id)
-      window.location.reload()
-    }
-    linha.insertCell(4).append(btn)
-    valorTotal += parseFloat(d.valor)
-  })
-
-  document.getElementById('valor_total').innerHTML = `Valor: R$${valorTotal}`
+function updateTotal(value = 0) {
+  const el = document.getElementById('total-expenses');
+  el.innerHTML = `Total: R$ ${value.toLocaleString('pt-br', { style: 'currency', currency: 'BRL' })}`;
 }
-
-function pesquisarDespesa() {
-  let ano = document.getElementById('ano').value
-  let mes = document.getElementById('mes').value
-  let dia = document.getElementById('dia').value
-  let tipo = document.getElementById('tipo').value
-  let descricao = document.getElementById('descricao').value
-  let valor = document.getElementById('valor').value
-
-  let despesa = new Despesa(ano, mes, dia, tipo, descricao, valor)
-  let despesas = bd.pesquisar(despesa)
-
-  carregaListaDespesas(despesas)
-}
-
 
 window.addEventListener("load", function () {
-  const form = document.querySelector("#expenseForm");
+  const form = document.getElementById("expenseForm");
+  const table = document.getElementById("listExpenses");
 
-  if (form.getAttribute("data-action") == "add") {
-    form.addEventListener("submit", cadastrarDespesa);
-  } else {    
-      form.addEventListener("submit", pesquisarDespesa);    
-  }
+  if (table) listExpenses();
+
+  if (form.getAttribute("data-action") == "add") form.addEventListener("submit", registerExpense);
+  else form.addEventListener("submit", searchInExpenses);
+
+  document.getElementById("clear-inputs").addEventListener('click', clearInputs)
 });
